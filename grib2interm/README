@@ -1,0 +1,43 @@
+For inquiries, reach out to Alex Rybchuk (alex.rybchuk@gmail.com)
+
+This document contains directions on how to convert ERA Grib files to WRF Intermediate files
+that can be used to create Met files. 
+
+0) CHECK GRIB AND WRF INTERMEDIATE FILES
+Grib files are in /shared-projects/wps-inputs/metfiles/era5-grib/north-america/grib, and WRF
+ Intermediate files are in
+ /shared-projects/wps-inputs/metfiles/era5-grib/north-america/wrf_intermediate
+ Make sure that the grib files have been downloaded for your dates of interest,
+ and that corresponding wrf intermediate files have not been created.
+
+1) EDIT JOB SUBMISSION SCRIPT
+Typically, we convert multiple months of data at once. Even if we want data for only one
+month (e.g. January), you need the first day of data from Feburary to run WRF files as
+we currently have them set up. If you only need one specific month of data, edit
+submit_grib2interm_single.sh, otherwise edit submit_grib2interm_batch.sh. The batch
+submission script converts multiple months of data at once in parallel by calling
+grib_to_interm.py multiple times.
+
+This script must manually be edited with one call per line. Let's say we want to run WRF
+Jan-01-17 --> Mar-31-17. The body of the script would look as follows.
+
+```
+srun -n 1 python grib_to_interm.py 2017-01-01 2017-02-01 &
+srun -n 1 python grib_to_interm.py 2017-02-01 2017-03-01 &
+srun -n 1 python grib_to_interm.py 2017-03-01 2017-04-01 &
+srun -n 1 python grib_to_interm.py 2017-04-01 2017-04-02 &
+```
+
+Make sure you edit `ntasks` within the job submission script to equal the number of
+months of analysis, 4 in this example. If you only want one month, go to the
+`..._single...` script and call without the &
+
+```
+srun -n 1 python grib_to_interm.py 2017-01-01 2017-02-01
+```
+
+
+
+2) SUBMIT SCRIPT
+Submit the script by calling `sbatch submit_grib2interm_single.sh`. Upon completion,
+you will have WRF Intermediate files in /shared-projects/.

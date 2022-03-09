@@ -1,0 +1,45 @@
+
+import pandas as pd
+import sys
+import os
+import numpy as np
+from calendar import monthrange
+import sys
+
+root_dir = sys.argv[1]
+year = int(sys.argv[2])
+start_month = int(sys.argv[3])
+end_month = int(sys.argv[4])
+domain = sys.argv[5]
+type = sys.argv[6]
+
+# Turn integer month into string
+def ID(x):
+    if x < 10:
+        return '0'+ str(x)[0:1]
+    else:
+        return str(x)[0:2]
+
+
+for m in np.arange(start_month, end_month + 1):
+    dpm = monthrange(year, m)[1]
+    st_date = pd.datetime(year, m, 1, 0, 0) - pd.Timedelta(1, 'D')
+    en_date = pd.datetime(year, m, 1, 0, 0) + pd.Timedelta(dpm, 'D')
+
+    # Open master namelist file and make the replacements
+    with open('/home/michael.optis@enxco.com/namelists/namelist.input.template.%s' % domain, 'r') as file:
+        filedata = file.read()
+            
+        # Write start and end dates
+        filedata = filedata.replace('yst', str(st_date.year)) 
+        filedata = filedata.replace('mst', ID(st_date.month))
+        filedata = filedata.replace('dst', ID(st_date.day))                                                                                                  
+        filedata = filedata.replace('yend', str(en_date.year))
+        filedata = filedata.replace('mend', ID(en_date.month))
+        filedata = filedata.replace('dend', ID(en_date.day))
+        filedata = filedata.replace('hsty', str(year))
+        filedata = filedata.replace('hstm', ID(m))        
+        filedata = filedata.replace('rn_type', type)        
+
+        with open('%s/%s_%s/namelist.input' % (root_dir,year,ID(m),), 'w') as file:
+            file.write(filedata)

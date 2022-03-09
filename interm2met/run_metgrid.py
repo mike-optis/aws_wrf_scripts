@@ -1,0 +1,60 @@
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+"""
+Created on Fri Nov 22 11:32:22 2019
+
+@author: orybchuk
+
+This script executes metgrid
+"""
+
+import os
+from shutil import move
+from tempfile import mkstemp
+
+def run_metgrid(met_case):
+    os.system("ln -sf $WPS_ROOT/metgrid.exe .")
+
+    ### Modify `fg_name` based on the WPS case
+    if met_case == 'WPS1':
+        ### Namelist modifications
+        fh, abs_path = mkstemp()
+        with os.fdopen(fh,'w') as new_file:
+            with open('namelist.wps') as old_file:
+                for line in old_file:
+                    if 'fg_name' not in line:
+                        new_file.write(line)
+                    else:
+                        new_file.write(" fg_name = 'ERA5_PRES', 'ERA5_SURF',\n")
+        # Remove original file
+        os.remove('namelist.wps')
+        # Move new file
+        move(abs_path, 'namelist.wps')
+        os.system("chmod 777 ./namelist.wps")
+
+    ### Link WRF intermediate files
+    ### Run metgrid
+    os.system("./metgrid.exe")
+
+    ### Print the status of the completed run
+    log_file = open("metgrid.log", "r")
+    last_line = log_file.readlines()[-1]
+    log_file.close()
+    is_success = "Success" in last_line
+    if is_success:
+        print("Successful completion of metgrid.exe!")
+    else:
+        print("ERROR in metgrid.exe")
+        print(last_line)
+
+
+
+    ### Remove geogrid + ungrib files
+#    if ((met_case=='WPS1' or met_case=='WPS2')):
+#        os.system("rm geo_em*")
+#        os.system("rm ERA5*")
+#    if ((met_case=='WPS3' or met_case=='WPS4')):
+#        os.system("rm geo_em*")
+#        os.system("rm MERRA2*")
+#    if ((met_case=='WPS2') or (met_case=='WPS4')):
+#        os.system("rm SST*")

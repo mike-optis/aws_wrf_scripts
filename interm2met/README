@@ -1,0 +1,41 @@
+For inquiries, contact Alex Rybchuk (alex.rybchuk@gmail.com)
+
+This directory contains code to convert WRF Intermediate files to met_files.
+This conversion is done with the assistance of make_met_dirs.py as well as
+wps_ensemble.py.
+
+~~~~~~~~~ HOW TO CREATE MET_EM FILES ~~~~~~~~~~
+
+1. COPY SCRIPTS TO DIRECTORY OF INTEREST
+To generate met_files for e.g. the North Atlantic, copy make_met_dirs.py and
+submit_ensemble_met.sh to /projects/oswwra/tap/region-offshoreNA/WPS1/met_data.
+make_met_dirs.py creates one directory per month and populates each directory
+with files that will be needed for wps_ensemble.py to run. submit_ensemble_met.sh
+will submit an ensemble of wps_ensemble.py jobs.
+
+2. MODIFY make_met_dirs.py
+Modify the start and end date by opening up this python script and modifying
+start_date_str and end_date_str. I recommend that both the start and end date are the first
+day of a month. Depending on where you place this script, you also may need
+to specify the WPS version manually, where "WPS version" refers to the pairing of
+SST product and reanalysis product (as was done in offshore CA for 2017).
+
+3. EXECUTE make_met_dirs.py
+Run this script. You will need to set up a conda environment that has the 'pandas'
+library https://www.nrel.gov/hpc/eagle-software-python.html
+This script will copy over wps_ensemble.py and additional helper scripts.
+It will also generate an aux_params.csv with the start date, end date, and WPS
+version for this run. If you find that your `short` SLURM jobs time out
+before all the met_files are generated, update the start_date in this file to
+start from a midpoint.
+
+4. EDIT AND RUN submit_ensemble_met.sh
+Edit this script to submit one job-per-month. Follow directions in ../grib2interm
+if you are only interested in running for a single month. Be sure that `ntasks`
+equals the number of months you are submitting for.
+
+
+~~~~~~~~~ HOW THE CODE WORKS ~~~~~~~~~
+To create met_em files, several Python scripts are called. The main script is
+wps_ensemble.py. It manages a lot of the overarching parameters (e.g. which
+WPS case am I running?) and calls the helper scripts (e.g. run_geogrid.py)

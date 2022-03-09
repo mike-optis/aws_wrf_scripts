@@ -1,0 +1,53 @@
+&share
+ wrf_core = 'ARW',
+ max_dom = 1,
+ start_date = '$STARTDATE',
+ end_date   = '$ENDDATE',
+ interval_seconds = 10800,
+ io_form_geogrid = 2,
+/
+
+&geogrid
+ !!!!!!!!!!!!!!!!! THIS SECTION DOES NOT MATTER FOR THIS SCRIPT
+ parent_id         =  0,   1,  2,
+ parent_grid_ratio =  1,   3,	3,
+ i_parent_start    =  1, 48, 55,
+ j_parent_start    =  1, 50, 55,
+ e_we              =  100, 151, 202,
+ e_sn              =  103, 154, 205,
+ !
+ !!!!!!!!!!!!!!!!!!!!!!!!!!!! IMPORTANT NOTE !!!!!!!!!!!!!!!!!!!!!!!!!!!!
+ ! The default datasets used to produce the MAXSNOALB and ALBEDO12M
+ ! fields have changed in WPS v4.0. These fields are now interpolated
+ ! from MODIS-based datasets.
+ !
+ ! To match the output given by the default namelist.wps in WPS v3.9.1,
+ ! the following setting for geog_data_res may be used:
+ !
+ ! geog_data_res = 'maxsnowalb_ncep+albedo_ncep+default', 'maxsnowalb_ncep+albedo_ncep+default',
+ !
+ !!!!!!!!!!!!!!!!!!!!!!!!!!!! IMPORTANT NOTE !!!!!!!!!!!!!!!!!!!!!!!!!!!!
+ !
+ geog_data_res = 'default','default','default',
+ dx = 18000,
+ dy = 18000,
+ map_proj = 'lambert',
+ ref_lat   =  39.88,
+ ref_lon   = -72.55,
+ truelat1  =  30.0,
+ truelat2  =  60.0,
+ stand_lon = -72.00,
+ geog_data_path = '/projects/oswwra/WPS_GEOG/'
+ opt_geogrid_tbl_path = '/projects/oswwra/WPS/geogrid/'
+/
+
+&ungrib
+ out_format = 'WPS',
+ prefix = 'ERA5_surface',
+/
+
+&metgrid
+ fg_name = 'ERA5_PRES', 'ERA5_SURF',
+ io_form_metgrid = 2,
+ opt_metgrid_tbl_path = '/projects/oswwra/WPS/metgrid/'
+/

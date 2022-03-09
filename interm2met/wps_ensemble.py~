@@ -1,0 +1,87 @@
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+"""
+Created on Wed Nov 20 12:05:05 2019
+
+@author: Alex Rybchuk
+
+This is the umbrella program used to carry out all the steps required to create
+   an ensemble of WPS runs.
+"""
+
+import os
+import pandas as pd
+from pathlib import Path
+from init_namelist import set_share, set_geogrid
+from run_geogrid import run_geogrid
+from run_ungrib import run_ungrib
+from run_metgrid import run_metgrid
+
+### Load required libraries onto the compile node
+# Call "source init_modules.sh"
+
+
+### Directory management
+# cd into where this python file is located
+os.chdir(os.path.dirname(os.path.abspath(__file__)))
+
+# # Get locations of files
+# scripts_dir = '/projects/oswwra/alex_scripts/python/'
+# meta_data_dir = '/projects/oswwra/meta_data/'           # MODIFY ME
+
+### Default inputs
+## Inputs - region, WPS version, and time
+home_dir = os.getcwd()
+home_path = Path(home_dir)
+## dom_case = home_path.parts[-4]
+dom_case = 'prod-hawaii'    # MODIFY ME
+aux_in = pd.read_csv('aux_params.csv', delim_whitespace=True)  # made by make_met_dirs.py
+WPS_case = aux_in['WPS'].iloc[0]
+start_date_str = aux_in['start_date'].iloc[0]
+end_date_str = aux_in['end_date'].iloc[0]
+
+## Inputs - domain and simulation duration
+dom_in = pd.read_csv("regions.csv", delim_whitespace=True)  # copied by make_met_dirs.py
+dom_in = dom_in.set_index("name")
+ref_lat = dom_in.loc[dom_case, 'ref_lat']
+ref_lon = dom_in.loc[dom_case, 'ref_lon']
+stand_lon = dom_in.loc[dom_case, 'stand_lon']
+d1_ewe = dom_in.loc[dom_case, 'd1_ewe']
+d2_ewe = dom_in.loc[dom_case, 'd2_ewe']
+d3_ewe = dom_in.loc[dom_case, 'd3_ewe']
+d1_esn = dom_in.loc[dom_case, 'd1_esn']
+d2_esn = dom_in.loc[dom_case, 'd2_esn']
+d3_esn = dom_in.loc[dom_case, 'd3_esn']
+d2_i = dom_in.loc[dom_case, 'd2_i']
+d2_j = dom_in.loc[dom_case, 'd2_j']
+d3_i = dom_in.loc[dom_case, 'd3_i']
+d3_j = dom_in.loc[dom_case, 'd3_j']
+max_dom = dom_in.loc[dom_case, 'max_dom']
+
+## Inputs - meteorological forcing
+met_in = pd.read_csv("wps_setups.csv", delim_whitespace=True)  # copied by make_met_dirs.py
+met_in = met_in.set_index("name")
+interval_seconds = met_in.loc[WPS_case, 'interval']
+
+#### Make initial edits to the namelist
+if True:
+    set_share(start_date_str, end_date_str, interval_seconds, max_dom)
+    set_geogrid(ref_lat, ref_lon, stand_lon,
+                d1_ewe, d2_ewe, d3_ewe, d1_esn, d2_esn, d3_esn,
+                d2_i, d3_i, d2_j, d3_j)
+    print("Initial edits to namelist completed.\n")
+
+##### Run geogrid
+if True:
+    print("Running geogrid...")
+    run_geogrid()
+
+##### Run ungrib
+if True:
+    print("Running ungrib...")
+    run_ungrib(start_date_str, end_date_str, WPS_case)
+
+##### Run metgrid
+if True:
+    print("Running metgrid...")
+    run_metgrid(WPS_case)

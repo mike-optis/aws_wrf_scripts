@@ -1,0 +1,157 @@
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+"""
+Created on Fri Nov 22 09:17:13 2019
+
+@author: orybchuk
+
+This script either runs ungrib.exe or links to pre-ungribbed files,
+    depending on the reanalysis product as judged by WPS#
+"""
+
+from tempfile import mkstemp
+from shutil import move
+import os
+from datetime import datetime, timedelta
+
+def run_ungrib(start_date_str, end_date_str, met_case):
+    ##### The set up for ungrib
+    ## Link to ungrib
+    os.system("ln -sf /nopt/nrel/apps/wrf/WPS-4.1/ungrib.exe .")
+
+    ## Prepare date range to be linked
+    start_date = datetime.strptime(start_date_str, '%Y-%m-%d_%H:%M:%S')
+    end_date = datetime.strptime(end_date_str, '%Y-%m-%d_%H:%M:%S')
+
+    if ((met_case=='WPS1') or (met_case=='WPS2')):
+        ## Link to the pre-generated intermediate files
+        my_date = start_date
+        while my_date <= end_date:
+            year = my_date.year
+            month = my_date.month
+            day = my_date.day
+
+            os.system("ln -sf /shared-projects/wps-inputs/metfiles/era5-grib/"+
+                      "north-america/wrf_intermediate/"+str(year)+"/"+
+                      str(month).zfill(2)+"/ERA5_*"+str(year)+"-"+
+                      str(month).zfill(2)+"-"+str(day).zfill(2)+"_* .")
+
+            my_date += timedelta(days=1)
+        print("Linked to ERA5 intermediate files!")
+
+    if met_case == 'WPS2':  # Add SST
+        ### Link to SST Vtable and link_grib
+        os.system("ln -sf /nopt/nrel/apps/wrf/WPS-4.1/ungrib/Variable_Tables/Vtable.SST Vtable")
+        os.system("cp /nopt/nrel/apps/wrf/WPS-4.1/link_grib.csh .")
+
+        ### Namelist modifications
+        fh, abs_path = mkstemp()
+        with os.fdopen(fh,'w') as new_file:
+            with open('namelist.wps') as old_file:
+                for line in old_file:
+                    if 'prefix' not in line:
+                        new_file.write(line)
+                    else:
+                        new_file.write(" prefix = 'SST',\n")
+        # Remove original file
+        os.remove('namelist.wps')
+        # Move new file
+        move(abs_path, 'namelist.wps')
+
+        ## Link to full days of SST
+        my_date = start_date
+        while my_date <= end_date:
+            year = my_date.year
+            month = my_date.month
+            day = my_date.day
+
+            os.system("ln -sf /shared-projects/wps-inputs/sst/"+
+                      str(year)+"/"+str(month).zfill(2)+
+                      "/*"+str(year)+str(month).zfill(2)+str(day).zfill(2)+" .")
+            my_date += timedelta(days=1)
+        print("Linked to SST .grib files!")
+
+        ## .grib --> GRIBFILEs
+        os.system("./link_grib.csh rtg*")
+        print("SST GRIBFILEs generated!")
+
+        #### Run ungrib.exe for surface data
+        os.system("./ungrib.exe >& ungrib.log.sst")
+
+        ### Remove data
+        os.system("rm rtg*")
+        os.system("rm GRIBFILE.*")
+
+        ### Print the status of the completed run
+        log_file = open("ungrib.log.sst", "r")
+        last_line = log_file.readlines()[-2]
+        log_file.close()
+        is_success = "Success" in last_line
+        if is_success:
+            print("Successful completion of ungrib.exe! (SST)")
+        else:
+            print("ERROR in ungrib.exe (SST)")
+            print(last_line)
+
+    # ~~~~~~~~~~~~~~~~~~~~~~~ MERRA 2 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    if ((met_case=='WPS3') or (met_case=='WPS4')):
+        ## Link to the pre-generated intermediate files
+        my_date = start_date
+        while my_date <= end_date:
+            year = my_date.year
+            month = my_date.month
+            day = my_date.day
+
+            os.system("ln -sf /shared-projects/wps-inputs/metfiles/merra2/"
+                        +"wrf-interm/"+str(year)+"/"+str(year)+str(month).zfill(2)
+                        +"/MERRA2:"+str(year)+"-"+str(month).zfill(2)+"-"
+                        +str(day).zfill(2)+"_* .")
+
+            my_date += timedelta(days=1)
+        print("Linked to MERRA intermediate files!")
+
+
+    if met_case == 'WPS4':  # Add SST
+        ### Link to SST Vtable
+        os.system("ln -sf /nopt/nrel/apps/wrf/WPS-4.1/ungrib/Variable_Tables/Vtable.SST Vtable")
+
+        ## Copy link_grib
+        os.system("cp /nopt/nrel/apps/wrf/WPS-4.1/link_grib.csh .")
+
+        ### Namelist modifications
+        fh, abs_path = mkstemp()
+        with os.fdopen(fh,'w') as new_file:
+            with open('namelist.wps') as old_file:
+                for line in old_file:
+                    if 'prefix' not in line:
+                        new_file.write(line)
+                    else:
+                        new_file.write(" prefix = 'SST',\n")
+        # Remove original file
+        os.remove('namelist.wps')
+        # Move new file
+        move(abs_path, 'namelist.wps')
+
+        ## Link to full days of SST
+        my_date = start_date
+        while my_date <= end_date:
+            year = my_date.year
+            month = my_date.month
+            day = my_date.day
+
+            os.system("ln -sf /shared-projects/wps-inputs/sst/"+
+                      str(year)+"/"+str(month).zfill(2)+
+                      "/*"+str(year)+str(month).zfill(2)+str(day).zfill(2)+" .")
+            my_date += timedelta(days=1)
+        print("Linked to SST .grib files!")
+
+        ## .grib --> GRIBFILEs
+        os.system("./link_grib.csh rtg*")
+        print("SST GRIBFILEs generated!")
+
+        #### Run ungrib.exe for surface data
+        os.system("./ungrib.exe >& ungrib.log.sst")
+
+        ### Remove data
+        os.system("rm rtg*")
+        os.system("rm GRIBFILE.*")
