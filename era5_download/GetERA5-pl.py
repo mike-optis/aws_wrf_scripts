@@ -21,7 +21,7 @@ def conv(x):
         return '0' + str(x)
 
 #root_dir = '/home/era5_data/data/'
-save_root = '/mys3bucket/era5_data/'
+save_root = '/mnt/mys3/era5_data/'
 save_dir = save_root + str(year) + '/' + conv(month) + '/' 
 
 if not os.path.exists(save_dir):

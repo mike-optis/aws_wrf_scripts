@@ -29,8 +29,8 @@ for n in np.arange(0,12):
     year = df.loc[n, 'year']
     month = df.loc[n, 'month']
     dpm = monthrange(year, month)[1]
-    st_date = pd.datetime(year, month, 1, 0, 0) - pd.Timedelta(1, 'D') # Spin up on last day of month
-    en_date = pd.datetime(year, month, 1, 0, 0) + pd.Timedelta(2, 'D') # 2-day sim with one day startup 
+    st_date = pd.datetime(year, month, 1, 0, 0) - pd.Timedelta(1, 'D') + pd.Timedelta(12, 'H')# Spin up on last day of month at 12th hour
+    en_date = pd.datetime(year, month, 1, 0, 0) + pd.Timedelta(2, 'D') # 2-day sim with 12 hour start up 
     final_end = pd.datetime(year, month, 1, 0, 0) + pd.Timedelta(dpm, 'D') #+ pd.Timedelta(2, 'D') # Where we stop plus one day buffer
     print(final_end)
 
